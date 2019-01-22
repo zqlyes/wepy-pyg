@@ -1,0 +1,22 @@
+<template>
+  <view class="list">
+    我是列表页
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+
+// ES6中 类  react一样： 类组件
+export default class List extends wepy.page {
+  config = {
+    navigationBarTitleText: '列表页'
+  }
+  onLoad() {
+    console.log('onLoad')
+  }
+}
+</script>
+
+<style>
+</style>

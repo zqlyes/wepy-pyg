@@ -1,0 +1,325 @@
+<template>
+  <view class="detail">
+    <!-- 轮播图 -->
+    <swiper indicator-dots autoplay circular interval="{{2000}}">
+      <swiper-item wx:for="{{detail.pics}}" wx:key="pics_id">
+        <image src="{{item.pics_big_url}}" />
+      </swiper-item>
+    </swiper>
+
+    <!-- 商品信息 -->
+    <view class="info">
+      <view class="price">￥{{detail.goods_price}}</view>
+      <view class="des">
+        <view class="title">{{detail.goods_name}}</view>
+        <view class="collection">
+          <text class="iconfont icon-shoucang"></text>
+          <text>收藏</text>
+        </view>
+      </view>
+      <view class="fastMail">快递：免运费</view>
+    </view>
+
+    <view class="port">
+      <view><text>促销</text>满300减30元</view>
+      <view><text>已选</text>黑色/s/1件</view>
+      <view>
+        <text>送至</text>
+        <text class="address" @tap="setAddress">{{address}}</text>
+        <text class="iconfont icon-jiantouyou"></text>
+      </view>
+    </view>
+
+    <view class="tab">
+      <view class="service">
+        <text class="iconfont icon-kefu"></text>
+        <text>联系客服</text>
+      </view>
+      <navigator url="../pages/cart" open-type="switchTab" class="cart">
+        <text class="iconfont icon-gouwuche"></text>
+        <text>购物车</text>
+      </navigator>
+      <view class="addCart" @tap="addCart">加入购物车</view>
+      <view class="go">立即购买</view>
+    </view>
+
+    <view class="introduce">
+      <view class="img-into {{activeIndex === 1 ? 'active' : ''}}" @tap="changeTab({{1}})">图文详情</view>
+      <view class="standard {{activeIndex === 2 ? 'active' : ''}}" @tap="changeTab({{2}})">规格参数</view>
+    </view>
+    
+    <view class="intro-tab">
+      <view class="tab1" hidden="{{activeIndex !== 1}}">
+        <import src="../assets/wxParse/wxParse.wxml"></import>
+        <template is="wxParse" data="{{wxParseData: article.nodes}}"></template>
+      </view>
+      <view class="tab2" hidden="{{activeIndex !== 2}}">
+        <block wx:for="{{detail.attrs}}" wx:key="{{attr_id}}">
+          <view class="attr">
+            <text class="name">{{item.attr_name}}</text>
+            <text class="value">{{item.attr_value}}</text>
+          </view>
+        </block>
+      </view>
+    </view>
+    
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import fetch from '../utils/fetch.js'
+import WxParse from '../assets/wxParse/wxParse.js'
+
+// ES6中 类  react一样： 类组件
+export default class Detail extends wepy.page {
+  config = {
+    navigationBarTitleText: '商品详情'
+  }
+  data = {
+    id: '',
+    detail: {},
+    address: '请选择收获地址',
+    activeIndex: 1
+  }
+  methods = {
+    async setAddress() {
+      let res = await wepy.chooseAddress()
+      this.address =
+        res.provinceName + res.cityName + res.countyName + res.detailInfo
+      this.$apply()
+      wepy.setStorageSync('address', res)
+    },
+
+    changeTab(ele) {
+      this.activeIndex = ele
+    },
+
+    addCart() {
+      let cart = wepy.getStorageSync('cart') || []
+      let { goods_id, goods_name, goods_small_logo, goods_price } = this.detail
+      let goods = cart.find(item => item.goods_id === this.detail.goods_id)
+      if (!goods) {
+        cart.push({
+          goods_id,
+          goods_name,
+          goods_small_logo,
+          goods_price,
+          goods_num: 1,
+          isChecked: true
+        })
+      } else {
+        goods.goods_num++
+      }
+      wepy.setStorageSync('cart', cart)
+      wepy.showToast({
+        title: '添加购物车成功',
+        icon: 'success',
+        mask: true
+      })
+    }
+  }
+  onLoad(query) {
+    this.id = query.goods_id
+    this.getDetail()
+    this.getAddress()
+  }
+  async getDetail() {
+    let res = await fetch(`goods/detail?goods_id=${this.id}`)
+    this.detail = res.data.data
+    WxParse.wxParse('article', 'html', this.detail.goods_introduce, this)
+    this.$apply()
+  }
+  getAddress() {
+    let res = wepy.getStorageSync('address')
+    if (!res) return
+    this.address =
+      res.provinceName + res.cityName + res.countyName + res.detailInfo
+  }
+  wxParseImgLoad() {}
+}
+</script>
+
+<style lang="less">
+@import '../assets/wxss/icon-font.wxss';
+@import '../assets/wxParse/wxParse.wxss';
+page {
+  background-color: #f4f4f4;
+}
+swiper {
+  width: 750rpx;
+  height: 720rpx;
+
+  image {
+    width: 750rpx;
+    height: 720rpx;
+  }
+}
+
+.info {
+  padding: 20rpx 16rpx;
+  background-color: #fff;
+  margin-bottom: 20rpx;
+
+  .price {
+    color: #fe3451;
+    font-size: 48rpx;
+  }
+
+  .des {
+    margin: 20rpx 0;
+    display: flex;
+
+    .title {
+      color: #313131;
+      flex: 10;
+      font-size: 34rpx;
+      padding-right: 40rpx;
+    }
+    .collection {
+      flex: 2;
+      color: #a1a1a1;
+      font-size: 28rpx;
+      border-left: 1rpx solid #dddddd;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+
+      .icon-shoucang {
+        font-size: 28rpx;
+        margin-bottom: 4rpx;
+      }
+    }
+  }
+
+  .fastMail {
+    color: #a1a1a1;
+    font-size: 30rpx;
+  }
+}
+
+.port {
+  background-color: #fff;
+  padding: 30rpx 16rpx;
+  color: #a1a1a1;
+  font-size: 32rpx;
+  view {
+    margin-bottom: 40rpx;
+    position: relative;
+  }
+  text {
+    color: #555451;
+    margin-right: 30rpx;
+  }
+  .address {
+    color: #a1a1a1;
+  }
+  .icon-jiantouyou {
+    font-size: 30rpx;
+    position: absolute;
+    right: 10rpx;
+    color: #a1a1a1;
+  }
+}
+
+.tab {
+  width: 750rpx;
+  height: 100rpx;
+  border-top: 1rpx solid #ccc;
+  position: fixed;
+  bottom: 0;
+  background-color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+
+  .iconfont {
+    font-size: 38rpx;
+  }
+
+  view {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .service {
+    flex: 2;
+    font-size: 28rpx;
+    color: #6e7780;
+  }
+  .cart {
+    flex: 2;
+    font-size: 28rpx;
+    color: #6e7780;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+  .addCart {
+    flex: 3;
+    background-color: #ffb400;
+    height: 100rpx;
+  }
+  .go {
+    flex: 3;
+    background-color: #ff2d4a;
+    height: 100rpx;
+  }
+}
+
+.introduce {
+  height: 100rpx;
+  display: flex;
+  font-size: 32rpx;
+  background-color: #fff;
+
+  view {
+    height: 80rpx;
+    line-height: 80rpx;
+    flex: 5;
+    text-align: center;
+  }
+
+  .active {
+    color: #ff2d4a;
+    border-bottom: 6rpx solid #ff2d4a;
+  }
+}
+
+.intro-tab {
+  background-color: #fff;
+
+  .tab1 {
+    image {
+      width: 750rpx;
+      vertical-align: middle;
+    }
+  }
+
+  .tab2 {
+    padding: 20rpx 16rpx;
+    padding-bottom: 100rpx;
+
+    .attr {
+      margin-bottom: 30rpx;
+      font-size: 28rpx;
+      display: flex;
+
+      .name {
+        width: 150rpx;
+        color: #a29f9e;
+      }
+
+      .value {
+        color: #2b2b2b;
+        margin-left: 20rpx;
+      }
+    }
+  }
+}
+</style>
