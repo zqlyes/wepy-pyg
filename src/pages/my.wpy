@@ -1,20 +1,271 @@
 <template>
-  
+  <view class="profile">
+    <view class="user-header">
+      <view class="header-bg">
+        <image src="{{userInfo.avatarUrl}}"></image>
+      </view>
+      <view class="user-info">
+        <view class="img">
+          <text class="iconfont icon-shezhi"></text>
+          <image wx:if="{{!userInfo.avatarUrl}}" src="../assets/images/reg_logo@2x.png"></image>
+          <image wx:else src="{{userInfo.avatarUrl}}"></image>
+          <text class="iconfont icon-xiaoxi"></text>
+        </view>
+        <button hidden="{{token}}" open-type="getUserInfo" class="btn" @getuserinfo="wxLogin">登录/注册</button>
+        <view class="userName">{{userInfo.nickName}}</view>
+      </view>  
+    </view>
+    <view class="user-main">
+      <view class="user-collection">
+        <view class="col-item">
+          <view>0</view>
+          <view>收藏的店铺</view>
+        </view>
+        <view class="col-item">
+          <view>0</view>
+          <view>收藏的商品</view>
+        </view>
+        <view class="col-item">
+          <view>0</view>
+          <view>关注的商品</view>
+        </view>
+        <view class="col-item">
+          <view>0</view>
+          <view>我的足迹</view>
+        </view>
+      </view>
+      <view class="user-order">
+        <view class="title">我的订单</view>
+        <view class="order">
+          <navigator url="../pages/orders?type=1" class="order-item">
+            <text class="iconfont icon-dingdan"></text>
+            <text>全部订单</text>
+          </navigator>
+          <navigator url="../pages/orders?type=2" class="order-item">
+            <text class="iconfont icon-daifukuan"></text>
+            <text>待付款</text>
+          </navigator>
+          <navigator url="../pages/orders?type=3" class="order-item">
+            <text class="iconfont icon-daishouhuo"></text>
+            <text>待收货</text>
+          </navigator>
+          <navigator url="../pages/orders" class="order-item">
+            <text class="iconfont icon-tuikuan"></text>
+            <text>退款/退货</text>
+          </navigator>
+        </view>    
+      </view>
+      <view class="info">
+        <view class="address common">
+          <text>收货地址管理</text>
+          <text class="iconfont icon-jiantouyou"></text>
+        </view>
+        <view class="contact common">
+          <text>联系客服</text>
+          <text>040-456-7890</text>
+        </view>
+        <view class="opinion common">
+          <text>意见反馈</text>
+          <text class="iconfont icon-jiantouyou"></text>
+        </view>
+        <view class="about common">
+          <text>关于我们</text>
+          <text class="iconfont icon-jiantouyou"></text>
+        </view>
+      </view>
+    </view>   
+  </view>
 </template>
 
 <script>
 import wepy from 'wepy'
+import fetch from '../utils/fetch.js'
 
 // ES6中 类  react一样： 类组件
 export default class My extends wepy.page {
   config = {
-    navigationBarTitleText: '我的'
+    navigationBarTitleText: '我的',
+    navigationStyle: 'custom'
   }
   onLoad() {
     console.log('onLoad')
   }
+  onShow() {
+    this.token = wepy.getStorageSync('token')
+    this.userInfo = wepy.getStorageSync('userInfo')
+  }
+  data = {
+    token: '',
+    userInfo: ''
+  }
+  methods = {
+    async wxLogin(e) {
+      let codeRes = await wepy.login()
+      let code = codeRes.code
+      this.userInfo = e.detail.userInfo
+      this.$apply()
+      wepy.setStorageSync('userInfo', this.userInfo)
+      let { encryptedData, iv, rawData, signature } = e.detail
+      let data = {
+        code,
+        encryptedData,
+        iv,
+        rawData,
+        signature
+      }
+      let res = await fetch({
+        url: 'users/wxlogin',
+        method: 'POST',
+        data,
+        type: 'locale'
+      })
+      this.token = res.data.data.token
+      this.$apply()
+      wepy.setStorageSync('token', this.token)
+    }
+  }
 }
 </script>
 
-<style>
+<style lang="less">
+@import '../assets/wxss/icon-font.wxss';
+.user-header {
+  width: 750rpx;
+  height: 280rpx;
+  background-color: #ff2d4a;
+  padding-top: 120rpx;
+  .header-bg {
+    position: absolute;
+    top: 0;
+    width: 750rpx;
+    height: 280rpx;
+
+    image {
+      width: 1000rpx;
+      height: 1000rpx;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      filter: blur(30rpx);
+    }
+  }
+
+  .user-info {
+    position: relative;
+    z-index: 99;
+  }
+  .img {
+    height: 120rpx;
+    width: 750rpx;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    image {
+      width: 130rpx;
+      height: 130rpx;
+      border-radius: 50%;
+    }
+
+    .iconfont {
+      font-size: 36rpx;
+      color: #fff;
+      margin: 0 40rpx;
+    }
+  }
+
+  .userName {
+    color: #fff;
+    font-size: 32rpx;
+    text-align: center;
+    margin-top: 30rpx;
+  }
+
+  .btn {
+    width: 200rpx;
+    height: 80rpx;
+    background-color: #fff;
+    border-radius: 8rpx;
+    margin: 20rpx auto 0;
+    line-height: 80rpx;
+    font-size: 36rpx;
+    text-align: center;
+  }
+}
+
+.user-main {
+  position: relative;
+  z-index: 99;
+  background-color: #fff;
+}
+.user-collection {
+  width: 710rpx;
+  height: 120rpx;
+  margin: -20rpx 20rpx 0;
+  background-color: #fff;
+  display: flex;
+  justify-content: space-around;
+  font-size: 28rpx;
+  text-align: center;
+  color: #7e8080;
+  .col-item {
+    padding-top: 20rpx;
+
+    view:first-child {
+      margin-bottom: 10rpx;
+    }
+  }
+}
+.user-order {
+  margin-top: 40rpx;
+  .title {
+    height: 60rpx;
+    width: 100%;
+    padding: 0 40rpx;
+    border-bottom: 1rpx solid #e3e3e3;
+    text-indent: 4rpx;
+    font-size: 32rpx;
+  }
+  .order {
+    display: flex;
+    justify-content: space-around;
+    padding-top: 30rpx;
+
+    .order-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      font-size: 30rpx;
+
+      .iconfont {
+        font-size: 64rpx;
+        color: #ff304f;
+        margin-bottom: 10rpx;
+      }
+    }
+  }
+}
+.info {
+  padding: 40rpx;
+  font-size: 32rpx;
+
+  .iconfont {
+    font-size: 28rpx;
+    color: #e3e3e3;
+  }
+
+  .common {
+    display: flex;
+    justify-content: space-between;
+    height: 100rpx;
+    align-items: center;
+    border-bottom: 1rpx solid #e3e3e3;
+  }
+
+  .address {
+    margin: 20rpx 0;
+    border-bottom: none;
+  }
+}
 </style>

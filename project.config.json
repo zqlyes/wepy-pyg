@@ -29,7 +29,7 @@
 			"list": []
 		},
 		"miniprogram": {
-			"current": 1,
+			"current": 4,
 			"list": [
 				{
 					"id": -1,
@@ -40,7 +40,25 @@
 				{
 					"id": -1,
 					"name": "购物车",
-					"pathName": "pages/cart"
+					"pathName": "pages/cart",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "订单页",
+					"pathName": "pages/cart_order",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "个人中心页",
+					"pathName": "pages/my",
+					"query": ""
+				},
+				{
+					"id": -1,
+					"name": "订单页",
+					"pathName": "pages/orders"
 				}
 			]
 		}

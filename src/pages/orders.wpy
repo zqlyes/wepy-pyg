@@ -1,0 +1,132 @@
+<template>
+  <view class="orders">
+    <view class="nav">
+      <block wx:for="{{navList}}" wx:key="*this">
+        <view class="nav-item {{tabIndex === index ? 'active' : ''}}" @tap="changeTab({{index}})">{{item}}</view>
+      </block>
+    </view>
+    <view class="order-list">
+      <block wx:for="{{goodsList}}" wx:key="order_id">
+        <view class="order-item">
+          <view class="goods-list">
+            <block wx:for="{{item.order_detail}}" wx:key="goods_id" wx:for-item="goods">
+              <view class="goods-item">
+                <view class="img-box">
+                  <image src="{{goods.goods_small_logo}}"></image>
+                </view>
+                <view class="goods-info">
+                  <view class="title">{{goods.goods_name}}</view>
+                  <view class="goods-tips">
+                    <view class="price">{{goods.goods_price}}</view>
+                    <view class="count">×{{goods.goods_num}}</view>
+                  </view>
+                </view>
+              </view>
+            </block>
+          </view>
+          <view class="total"></view>
+          <view class="tips"></view>
+        </view>
+      </block>
+    </view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import fetch from '../utils/fetch.js'
+
+// ES6中 类  react一样： 类组件
+export default class Orders extends wepy.page {
+  config = {
+    navigationBarTitleText: '订单页'
+  }
+  onLoad(query) {
+    console.log('onLoad')
+    this.tabIndex = query.type - 1
+    this.getGoodsList(query.type)
+  }
+  data = {
+    navList: ['全部', '待付款', '已付款', '退款/退货'],
+    tabIndex: 0,
+    goodsList: []
+  }
+  methods = {
+    changeTab(index) {
+      this.tabIndex = index
+      this.getGoodsList(index + 1)
+    }
+  }
+  async getGoodsList(type) {
+    let res = await fetch({
+      url: 'my/orders/all',
+      data: {
+        type
+      },
+      type: 'locale'
+    })
+    console.log(res.data.data)
+    this.goodsList = res.data.data
+    this.goodsList.forEach(item => {
+      item.order_detail = JSON.parse(item.order_detail)
+    })
+    this.$apply()
+  }
+}
+</script>
+
+<style lang="less">
+.nav {
+  width: 750rpx;
+  height: 100rpx;
+  border-bottom: 6rpx solid #f5f5f5;
+  display: flex;
+  font-size: 30rpx;
+
+  .nav-item {
+    flex: 1;
+    text-align: center;
+    height: 90rpx;
+    line-height: 100rpx;
+  }
+
+  .active {
+    color: #ff2d4a;
+    border-bottom: 10rpx solid #ff2d4a;
+  }
+}
+.order-list {
+  padding: 0 20rpx;
+}
+.goods-item {
+  width: 750rpx;
+  height: 260rpx;
+  display: flex;
+  border-bottom: 2rpx solid #ccc;
+
+  .img-box {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    image {
+      width: 200rpx;
+      height: 200rpx;
+    }
+  }
+  .goods-info {
+    flex: 2;
+    font-size: 30rpx;
+    padding: 20rpx;
+    box-sizing: border-box;
+
+    .title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+  }
+}
+</style>

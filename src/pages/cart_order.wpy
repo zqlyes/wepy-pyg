@@ -1,0 +1,288 @@
+<template>
+  <view class="order-list">
+    <view class="address">
+      <block wx:if="{{address}}">
+        <view class="tip1">
+          <view class="username">收货人：{{address.userName}}</view>
+          <view class="tel">{{address.telNumber}}</view>
+        </view>
+        <view class="tip2" @tap="addAdr">收货地址：{{address.place}}</view>
+      </block>
+      <block wx:else>
+        <view class="new" @tap="addAdr">+新增地址</view>
+      </block>
+      <image src="../assets/images/cart_border@2x.png"></image>
+    </view>
+    <view class="order">
+      <view class="order-item" wx:for="{{orderList}}" wx:key="{{goods_id}}">
+        <navigator url="../pages/goods_detail?goods_id={{item.goods_id}}" class="img-box">
+          <image src="{{item.goods_small_logo}}"></image>
+        </navigator>
+        <view class="order-info">
+          <view class="title">{{item.goods_name}}</view>
+          <view class="tip">
+            <view class="price">￥{{item.goods_price}}.00</view>
+            <view class="count">×{{item.goods_num}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+    <view class="showTips"> 项目测试使用，支付成功后我们不会为您发货 </view>
+    <view class="statis">
+      <view class="goodsMoney common">
+        <view>商品金额</view>
+        <view class="color">￥{{totalMoney}}.00</view>
+      </view>
+      <view class="fare common">
+        <view>运费</view>
+        <view class="color">+￥6.00</view>
+      </view>
+      <view class="totalMoney common">
+        <text>实付金额</text>
+        <text class="color">￥{{totalMoney + 6}}.00</text>
+      </view>
+    </view>
+    <button wx:if="{{!token}}" class="payOrder" open-type="getUserInfo" @getuserinfo="goLogin">点击登陆后下单</button>
+    <view wx:else class="goPay" @tap="goPay">微信支付</view>
+  </view>
+</template>
+
+<script>
+import wepy from 'wepy'
+import fetch from '../utils/fetch.js'
+
+// ES6中 类  react一样： 类组件
+export default class CartOrder extends wepy.page {
+  config = {
+    navigationBarTitleText: '订单页'
+  }
+  onLoad() {
+    console.log('onLoad')
+  }
+  data = {
+    orderList: [],
+    address: '',
+    token: ''
+  }
+  computed = {
+    totalMoney() {
+      return this.orderList.reduce(
+        (total, item) => total + item.goods_price * item.goods_num,
+        0
+      )
+    }
+  }
+  methods = {
+    async addAdr() {
+      let res = await wepy.chooseAddress()
+      wepy.setStorageSync('address', res)
+      this.getAddress()
+    },
+    async goLogin(e) {
+      let resCode = await wepy.login()
+      let code = resCode.code
+      // let res = await wepy.getUserInfo()
+      // console.log(res)
+      wepy.setStorageSync('userInfo', e.detail.userInfo)
+      let { encryptedData, iv, rawData, signature } = e.detail
+      let data = {
+        code,
+        encryptedData,
+        iv,
+        rawData,
+        signature
+      }
+      let res = await fetch({
+        url: 'users/wxlogin',
+        data,
+        method: 'POST',
+        type: 'locale'
+      })
+      this.token = res.data.data.token
+      this.$apply()
+      wepy.setStorageSync('token', this.token)
+      wepy.showToast({
+        title: '登录成功了',
+        icon: 'success'
+      })
+    },
+    async goPay() {
+      let orderPrice = this.totalMoney + 6
+      let consigneeAddr = this.address.place
+      if (!consigneeAddr) {
+        wepy.showToast({
+          title: '请先选择收货地址',
+          icon: 'none'
+        })
+        return
+      }
+      let orderDetail = JSON.stringify(this.orderList)
+      let goods = this.orderList.map(item => {
+        return {
+          goods_id: item.goods_id,
+          goods_number: item.goods_num,
+          goods_price: item.goods_price
+        }
+      })
+      let data = {
+        order_price: orderPrice,
+        consignee_addr: consigneeAddr,
+        order_detail: orderDetail,
+        goods
+      }
+      let resCreate = await fetch({
+        url: 'my/orders/create',
+        method: 'POST',
+        data,
+        type: 'locale'
+      })
+      let orderNumber = resCreate.data.data.order_number
+      let res = await fetch({
+        url: 'my/orders/req_unifiedorder',
+        method: 'POST',
+        type: 'locale',
+        data: {
+          order_number: orderNumber
+        }
+      })
+      console.log(res)
+    }
+  }
+  onShow() {
+    this.getOrderList()
+    this.getAddress()
+    this.getToken()
+  }
+  getToken() {
+    this.token = wepy.getStorageSync('token')
+  }
+  getOrderList() {
+    let cart = wepy.getStorageSync('cart') || []
+    this.orderList = cart.filter(item => item.isChecked)
+  }
+  getAddress() {
+    let ads = wepy.getStorageSync('address')
+    if (!ads) return
+    this.address = ads
+    let { provinceName, cityName, countyName, detailInfo } = ads
+    this.address.place = provinceName + cityName + countyName + detailInfo
+  }
+}
+</script>
+
+<style lang="less">
+.address {
+  width: 750rpx;
+  height: 200rpx;
+  font-size: 32rpx;
+  position: relative;
+  overflow: hidden;
+
+  .tip1 {
+    display: flex;
+    padding: 20rpx;
+
+    .tel {
+      margin-left: 200rpx;
+    }
+  }
+
+  .tip2 {
+    padding: 20rpx;
+  }
+
+  image {
+    height: 14rpx;
+    width: 750rpx;
+    position: absolute;
+    bottom: 0;
+  }
+  .new {
+    width: 300rpx;
+    height: 80rpx;
+    background-color: #f4f4f4;
+    line-height: 80rpx;
+    text-align: center;
+    color: #dad4d4;
+    font-size: 32rpx;
+    margin: 60rpx auto 0;
+  }
+}
+.order-item {
+  width: 750rpx;
+  height: 260rpx;
+  padding: 30rpx 20rpx;
+  border-bottom: 1rpx solid #ccc;
+  box-sizing: border-box;
+  display: flex;
+
+  .img-box {
+    flex: 4;
+    image {
+      width: 200rpx;
+      height: 200rpx;
+    }
+  }
+  .order-info {
+    flex: 8;
+    font-size: 30rpx;
+
+    .title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: -webkit-box;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .tip {
+      display: flex;
+      margin-top: 70rpx;
+      justify-content: space-between;
+      font-size: 38rpx;
+
+      .price {
+        color: #ff2d4a;
+      }
+
+      .count {
+        color: #9999a4;
+      }
+    }
+  }
+}
+.showTips {
+  font-size: 28rpx;
+  color: red;
+  padding: 20rpx;
+  font-weight: 700;
+}
+.statis {
+  padding: 20rpx;
+  .common {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 16rpx;
+  }
+  .totalMoney {
+    justify-content: flex-end;
+    font-size: 28rpx;
+  }
+
+  .color {
+    color: #ff2d4a;
+  }
+}
+.payOrder,
+.goPay {
+  margin: 0 20rpx 20rpx;
+  width: 710rpx;
+  height: 80rpx;
+  background-color: #00c000;
+  line-height: 80rpx;
+  text-align: center;
+  color: #fff;
+  font-size: 32rpx;
+  border-radius: 4rpx;
+}
+</style>

@@ -1,48 +1,57 @@
 <template>
   <view class="cart">
-    <view class="shop-name">
-      <text class="iconfont icon-dianpu"></text>
-      <text class="name">优购生活馆</text>
-    </view>
+    <block wx:if="{{cart.length > 0}}">
+      <view class="shop-name">
+        <text class="iconfont icon-dianpu"></text>
+        <text class="name">优购生活馆</text>
+      </view>
 
-    <view class="goods-list">
-      <view class="goods-item" wx:for="{{cart}}" wx:key="{{goods_id}}">
-        <view class="icon" @tap="toggleState({{item.goods_id}})">
-          <icon type="success" color="red" size="16" wx:if="{{item.isChecked}}"></icon>
-          <icon type="circle" color="rgb(208,206,205)" size="16" wx:elif></icon>
-        </view>
-        <navigator url="../pages/goods_detail?goods_id=${item.goods_id}" class="img">
-          <image src="{{item.goods_small_logo}}"></image>
-        </navigator>
-        <view class="info">
-          <view class="title">{{item.goods_name}}</view>
-          <view class="tab">
-            <view class="price">￥{{item.goods_price}}.00</view>
-            <view class="count">
-            <text @tap="changeCount({{item.goods_id}},{{-1}})" class="{{item.goods_num === 1 ? 'disabled' : ''}}">-</text>
-              <input value="{{item.goods_num}}"></input>
-              <text @tap="changeCount({{item.goods_id}},{{1}})">+</text>
+      <view class="goods-list">
+        <view class="goods-item" wx:for="{{cart}}" wx:key="{{goods_id}}">
+          <view class="icon" @tap="toggleState({{item.goods_id}})">
+            <icon type="success" color="red" size="16" wx:if="{{item.isChecked}}"></icon>
+            <icon type="circle" color="rgb(208,206,205)" size="16" wx:elif></icon>
+          </view>
+          <navigator url="../pages/goods_detail?goods_id={{item.goods_id}}" class="img">
+            <image src="{{item.goods_small_logo}}"></image>
+          </navigator>
+          <view class="info">
+            <view class="title">{{item.goods_name}}</view>
+            <view class="tab">
+              <view class="price">￥{{item.goods_price}}.00</view>
+              <view class="count">
+              <text @tap="changeCount({{item.goods_id}},{{-1}})" class="{{item.goods_num === 1 ? 'disabled' : ''}}">-</text>
+                <input value="{{item.goods_num}}"></input>
+                <text @tap="changeCount({{item.goods_id}},{{1}})">+</text>
+              </view>
             </view>
           </view>
-        </view>
-      </view>   
-    </view>
+        </view>   
+      </view>
 
-    <view class="footer">
-      <view class="toggleAll" @tap="changeToggleAll">
-        <icon type="success" color="red" size="16" wx:if="{{isCheckedAll}}"></icon>
-        <icon type="circle" color="rgb(208,206,205)" size="16" wx:elif></icon>
-        <text>全选</text>
-      </view>
-      <view class="total">
-        <view>
-          <text>合计：</text>
-          <text class="money">￥{{totalMoney}}.00</text>
+      <view class="footer">
+        <view class="toggleAll" @tap="changeToggleAll">
+          <icon type="success" color="red" size="16" wx:if="{{isCheckedAll}}"></icon>
+          <icon type="circle" color="rgb(208,206,205)" size="16" wx:elif></icon>
+          <text>全选</text>
         </view>
-        <view class="free">包含运费</view>
+        <view class="total">
+          <view>
+            <text>合计：</text>
+            <text class="money">￥{{totalMoney}}.00</text>
+          </view>
+          <view class="free">包含运费</view>
+        </view>
+        <view class="btn {{total === 0 ? 'disabled' : ''}}" @tap="goOrder">结算({{total}})</view>
       </view>
-      <view class="btn">结算({{total}})</view>
-    </view>
+    </block>
+    <block wx:else>
+      <view class="tips">
+        <view>购物车为空</view>
+        <navigator class="link" url="../pages/index" open-type="switchTab">点我，返回首页逛一下</navigator>
+      </view>
+    </block>
+    
   </view>
 </template>
 
@@ -86,6 +95,12 @@ export default class Cart extends wepy.page {
       } else {
         goods.goods_num += count
       }
+    },
+    goOrder() {
+      if (this.total === 0) return
+      wepy.navigateTo({
+        url: '/pages/cart_order'
+      })
     }
   }
   computed = {
@@ -116,6 +131,16 @@ export default class Cart extends wepy.page {
 
 <style lang="less">
 @import '../assets/wxss/icon-font.wxss';
+.tips {
+  text-align: center;
+  margin-top: 300rpx;
+
+  .link {
+    margin-top: 30rpx;
+    color: #ff5068;
+    font-size: 38rpx;
+  }
+}
 .shop-name {
   padding: 20rpx;
   width: 750rpx;
@@ -243,6 +268,10 @@ export default class Cart extends wepy.page {
     text-align: center;
     line-height: 100rpx;
     font-size: 32rpx;
+
+    &.disabled {
+      background-color: #ccc;
+    }
   }
 }
 </style>
